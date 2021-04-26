@@ -1,0 +1,40 @@
+// Colors
+@import url('https://fonts.googleapis.com/css2?family=Spectral&display=swap');
+
+$white:    #fff !default;
+$gray-100: #f8f4f8 !default;
+$gray-200: #f0e2f3 !default;
+$gray-300: #dfd1e2 !default;
+$gray-400: #c3bdc5 !default;
+$gray-500: #98949c !default;
+$gray-600: #7d7a7e !default;
+$gray-700: #5f5f5d !default;
+$gray-800: #424241 !default;
+$gray-900: #1d1d1c !default;
+$black:    #000 !default;
+
+$blue:    #46acc2 !default;
+$indigo:  #174688 !default;
+$purple:  #8b59b4 !default;
+$pink:    #e83e8c !default;
+$red:     #ef5b5b !default;
+$orange:  #eea837 !default;
+$yellow:  #ffcb31 !default;
+$green:   #23ce6b !default;
+$teal:    #46c2ad !default;
+$cyan:    #46a9c2 !default;
+
+$primary:       $purple !default;
+$secondary:     $gray-600 !default;
+$success:       $green !default;
+$info:          $cyan !default;
+$warning:       $orange !default;
+$danger:        $red !default;
+$light:         $gray-100 !default;
+$dark:          $gray-800 !default;
+
+.serif {
+    font-family: 'Spectral', serif;
+}
+
+@import 'node_modules/bootstrap/scss/bootstrap.scss';
