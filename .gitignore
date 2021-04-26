@@ -1,6 +1,8 @@
 lyrec_*.pkl
 lyrec_*.npy
 fulldataset.csv
+train_triplets.txt
+unique_tracks.txt
 
 MANIFEST
 build
