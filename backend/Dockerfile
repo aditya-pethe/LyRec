@@ -6,4 +6,12 @@ COPY main.py /app/main.py
 COPY data/lyrec_embeddings_1.0.pkl.npy /app/data/lyrec_embeddings_1.0.pkl.npy
 COPY data/lyrec_df_1.0.pkl /app/data/lyrec_df_1.0.pkl
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "$PORT"]
+COPY load_bert.py /app/load_bert.py
+
+WORKDIR /app
+
+RUN python3 load_bert.py
+
+RUN pip install gunicorn
+
+CMD gunicorn -b :$PORT main:app --capture-output

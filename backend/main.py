@@ -5,12 +5,12 @@ import pandas as pd
 from sentence_transformers import SentenceTransformer
 sbert_model = SentenceTransformer('bert-base-nli-mean-tokens')
 
+print("Loading data...")
 song_embeddings = np.load("data/lyrec_embeddings_1.0.pkl.npy")
+song_db = pd.read_pickle("data/lyrec_df_1.0.pkl") 
+print("Finished loading data...")
 
 app = FastAPI()
-song_db = pd.read_pickle("data/lyrec_df_1.0.pkl") 
-song_db["Song_lower"] = song_db["Song"].str.lower()
-song_db["Band_lower"] = song_db["Band"].str.lower()
 
 @app.get("/ping")
 def ping():
