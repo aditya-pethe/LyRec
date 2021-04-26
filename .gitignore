@@ -1,4 +1,5 @@
 lyrec_*.pkl
+lyrec_*.npy
 fulldataset.csv
 
 MANIFEST
