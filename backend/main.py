@@ -3,12 +3,14 @@ import numpy as np
 from sklearn.metrics import pairwise
 import pandas as pd
 from sentence_transformers import SentenceTransformer
+print("Loading BERT...")
 sbert_model = SentenceTransformer('bert-base-nli-mean-tokens')
+print("Finished Loading BERT...")
 
-print("Loading data...")
+print("Loading song data...")
 song_embeddings = np.load("data/lyrec_embeddings_1.0.pkl.npy")
 song_db = pd.read_pickle("data/lyrec_df_1.0.pkl") 
-print("Finished loading data...")
+print("Finished loading song data...")
 
 app = FastAPI()
 
