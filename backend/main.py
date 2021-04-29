@@ -1,34 +1,45 @@
 from fastapi import FastAPI, HTTPException
 import numpy as np
 from sklearn.metrics import pairwise
-import pandas as pd
+import firebase_admin
+from firebase_admin import credentials, firestore
+import datetime
+
+t = datetime.datetime.now()
 from sentence_transformers import SentenceTransformer
 print("Loading BERT...")
 sbert_model = SentenceTransformer('bert-base-nli-mean-tokens')
-print("Finished Loading BERT...")
+print(f"Finished Loading BERT... {datetime.datetime.now() - t}")
+print()
 
-print("Loading song data...")
-song_embeddings = np.load("data/lyrec_embeddings_1.0.pkl.npy")
-song_db = pd.read_pickle("data/lyrec_df_1.0.pkl") 
-print("Finished loading song data...")
+t = datetime.datetime.now()
+print("Loading song embeddings...")
+song_embeddings = np.load("data/lyrec_embeddings_1.0.pkl.npy", mmap_mode="r")
+print(f"Finished loading song embeddings... {datetime.datetime.now() - t}")
 
 app = FastAPI()
 
-@app.get("/ping")
+cred = credentials.Certificate("secrets.json")
+firebase_admin.initialize_app(cred)
+
+db = firestore.client()
+
+@app.get("/areualive")
 def ping():
     return { "alive": True }
 
 
 @app.get("/song/{song_id}")
 def get_song(song_id: int):
-    if song_id > len(song_db.index) or song_id < 0:
-        raise HTTPException(status_code=404, detail="Song not found")
-    entry = song_db.loc[song_id]
+    response = db.collection(u'songs').document(str(song_id))
+    entry = response.get().to_dict()
+    if entry is None:
+        return None
     return  {
         "id": song_id,
-        "name": entry['Song'],
-        "artist": entry['Band'],
-        "lyrics": entry['Lyrics']
+        "name": entry['name'],
+        "artist": entry['artist'],
+        "lyrics": entry['lyrics']
     }
 
 @app.get("/song")
@@ -39,24 +50,39 @@ def search_for_song(query: str = ""):
         "size": 0,
     }
     if len(query) > 3: 
-        entries = song_db.loc[song_db["Song_lower"].str.contains(query.lower(), na=False) | song_db["Band_lower"].str.contains(query.lower(), na=False)]
-        for index, _ in entries.iterrows():
-            if res["size"] >= 100:
-                break
-            res["results"].append(get_song(index))
-            res["size"] += 1
-        res["total_size"] = len(entries.index)
+        # entries = song_db.loc[song_db["Song_lower"].str.contains(query.lower(), na=False) | song_db["Band_lower"].str.contains(query.lower(), na=False)]
+        seen_set = set()
+        artist_stream = db.collection(u'songs').where(u'artist_lower', u'>=', query.lower()).limit(10).stream()
+        song_stream = db.collection(u'songs').where(u'name_lower', u'>=', query.lower()).limit(10).stream()
+        for doc in song_stream:
+            if doc.id not in seen_set:
+                seen_set.add(doc.id)
+                res["results"].append(doc.to_dict())
+                res["size"] += 1
+        for doc in artist_stream:
+            if doc.id not in seen_set:
+                seen_set.add(doc.id)
+                res["results"].append(doc.to_dict())
+                res["size"] += 1
     return res
 
 def generate_related_list(res, vector):
     song_scores = np.array(pairwise.cosine_similarity(vector, song_embeddings)[0])
     related_songs = np.argsort(song_scores)[::-1]
 
-    for i in related_songs.tolist():
-        if res["size"] >= 100:
+    docs = []
+
+    for i, song_id in enumerate(related_songs.tolist()):
+        if i >= 25:
             break
-        res["results"].append({"song": get_song(i), "score": float(song_scores[i])})
-        res["size"] += 1
+        docs.append(db.collection(u'songs').document(str(song_id)))
+    
+    docs = db.get_all(docs)
+
+    for doc in docs:
+        if doc.exists:
+            res["results"].append({"song": doc.to_dict(), "score": float(song_scores[i])})
+            res["size"] += 1
 
     res["total_size"] = len(related_songs)
 
@@ -81,8 +107,6 @@ def get_related_songs(song_id: int):
         "total_size": 0,
         "size": 0,
     }
-    if song_id > len(song_db.index) or song_id < 0:
-        raise HTTPException(status_code=404, detail="Song not found")
 
     song_vector = np.array([song_embeddings[song_id]])
 

@@ -15,8 +15,9 @@ export default function Home() {
   const [mode, changeMode] = useState<"song_mode" | "text_mode">("song_mode");
   const [loading, changeLoading] = useState(false);
   const [broken, changeBroken] = useState(false);
-  const { data, error, isValidating } = useSWR('/api/ping');
+  const { data, error, isValidating } = useSWR('/api/areualive', null, { loadingTimeout: 30000 });
   const timeoutRef = useRef(undefined);
+  const selectSoundTimeoutRef = useRef(undefined);
   const [relatedSongs, changeRelatedSongs] = useState<undefined | ListResponse<{ song: Song, score: number }>>(undefined);
 
   useEffect(() => {
@@ -65,9 +66,14 @@ export default function Home() {
     }
   }, [mode, selectedSong, lyricCommittedText, changeRelatedSongs, changeLoading, changeBroken]);
 
-  const loadSongs = async (val) => {
-    const data = (await fetch(`/api/song?query=${encodeURIComponent(val)}`).then(res => res.json())) as { results: Song[] };
-    return data.results.map((song) => ({ value: song.id, label: `${song.name} - ${song.artist}` }));
+  const loadSongs = (val, callback) => {
+    if (selectSoundTimeoutRef.current)
+      clearTimeout(selectSoundTimeoutRef.current);
+    
+    selectSoundTimeoutRef.current = setTimeout(async () => {
+      const data = (await fetch(`/api/song?query=${encodeURIComponent(val)}`).then(res => res.json())) as { results: Song[] };
+      callback(data.results.map((song) => ({ value: song.id, label: `${song.name} - ${song.artist}` })));
+    }, 500);
   }
 
   return (
@@ -83,11 +89,11 @@ export default function Home() {
               placement={"bottom"}
               overlay={
                 <Tooltip id={`tooltip-bottom`}>
-                  {isValidating ? "Still checking how the backend is doing (this might take a while since it likes to nap)" : error ? "The backend is unavailable!" : "The backend is all good!"}
+                  {isValidating ? "Still checking how the backend is doing (this might take a while since it likes to nap)" : error ? "The backend is unavailable! Maybe try refreshing?" : "The backend is all good!"}
                 </Tooltip>
               }
             >
-              <span className="badge bg-white text-dark border">Backend Status: {isValidating ? "💤" : error ? "❌" : "✅"}</span>
+              <p className="badge bg-white text-dark border m-0">Backend Status: {isValidating ? <Spinner animation="border"/> : error ? "❌" : "✅"}</p>
             </OverlayTrigger>
           </div>
           <Form>
@@ -101,6 +107,7 @@ export default function Home() {
             <Form.Group className={mode === "text_mode" ? "" : "d-none"}>
               <Form.Control as="textarea" rows={3} placeholder="enter some text..." value={lyricText} onChange={e => changeLyric(e.target.value)} disabled={error || isValidating} />
             </Form.Group>
+            {!data && <p className="text-muted pt-3 small animate__animated animate__fadeIn animate__delay-2s">You can't really do anything until the backend status has a green check mark! Thanks for your patience.</p>}
           </Form>
         </div>
 
@@ -114,8 +121,8 @@ export default function Home() {
           {loading ? (
             <Spinner animation="border" variant="primary" />
           ) : relatedSongs ? (
-            <h4 className="text-dark m-0">Showing {relatedSongs?.size} out {relatedSongs?.total_size} results</h4>
-          ) : <h4 className="text-dark m-0">Select a thing</h4>}
+            <h4 className="text-dark m-0">Showing {relatedSongs?.size} out of {relatedSongs?.total_size} results</h4>
+          ) : <h4 className="text-dark m-0">Select a song or enter some text</h4>}
         </div>
         <Row
           xs={1}
