@@ -79,10 +79,15 @@ def generate_related_list(res, vector):
     
     docs = db.get_all(docs)
 
-    for doc in docs:
+    results = []
+
+    for i, doc in enumerate(docs):
         if doc.exists:
-            res["results"].append({"song": doc.to_dict(), "score": float(song_scores[i])})
+            results.append({"song": doc.to_dict(), "score": float(song_scores[i])})
             res["size"] += 1
+        
+    results = sorted(results, key=lambda song: -1*song["score"])
+    res["results"] = results
 
     res["total_size"] = len(related_songs)
 
