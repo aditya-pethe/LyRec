@@ -15,7 +15,7 @@ export default function Home() {
   const [mode, changeMode] = useState<"song_mode" | "text_mode">("song_mode");
   const [loading, changeLoading] = useState(false);
   const [broken, changeBroken] = useState(false);
-  const { data, error, isValidating } = useSWR('/api/areualive', null, { loadingTimeout: 30000 });
+  const { data, error, isValidating } = useSWR('/api/areualive');
   const timeoutRef = useRef(undefined);
   const selectSoundTimeoutRef = useRef(undefined);
   const [relatedSongs, changeRelatedSongs] = useState<undefined | ListResponse<{ song: Song, score: number }>>(undefined);
@@ -93,7 +93,7 @@ export default function Home() {
                 </Tooltip>
               }
             >
-              <p className="badge bg-white text-dark border m-0">Backend Status: {isValidating ? <Spinner animation="border"/> : error ? "❌" : "✅"}</p>
+              <p className="badge bg-white text-dark border m-0">Backend Status: {isValidating ? <Spinner animation="grow" size="sm"/> : error ? "❌" : "✅"}</p>
             </OverlayTrigger>
           </div>
           <Form>
